@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace Pong
 {
@@ -16,6 +17,7 @@ namespace Pong
         Vector2 ballSpeed;
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+        Random rng = new Random();
 
         public Game1()
         {
@@ -31,9 +33,9 @@ namespace Pong
             computerRect = new Rectangle(780, 0, 10, 100);
             ballPos = new Vector2(_graphics.PreferredBackBufferWidth / 2,
                 _graphics.PreferredBackBufferHeight / 2);
-            ballSpeed = new Vector2(-800, 0);
-            playerSpeed = 200;
-            computerSpeed = 500;
+            ballSpeed = new Vector2(-200, 0);
+            playerSpeed = 300;
+            computerSpeed = 300;
             bumper = new Texture2D(_graphics.GraphicsDevice, 1, 1);
             Color[] data = new Color[1];
             data[0] = Color.White;
@@ -59,16 +61,64 @@ namespace Pong
                 Exit();
 
             // TODO: Add your update logic here
+            
+            // Player Movement and bounds
             var kState = Keyboard.GetState();
             if (kState.IsKeyDown(Keys.Up))
                 playerRect.Y -= (int)(playerSpeed * gameTime.ElapsedGameTime.TotalSeconds);
             if (kState.IsKeyDown(Keys.Down))
                 playerRect.Y += (int)(playerSpeed * gameTime.ElapsedGameTime.TotalSeconds);
-
             if (playerRect.Y < 0)
                 playerRect.Y = 0;
             else if (playerRect.Y > _graphics.PreferredBackBufferHeight - playerRect.Height)
                 playerRect.Y = _graphics.PreferredBackBufferHeight - playerRect.Height;
+
+            // Ball movement and collision
+            ballPos.X += (float)(ballSpeed.X * gameTime.ElapsedGameTime.TotalSeconds);
+            ballPos.Y += (float)(ballSpeed.Y * gameTime.ElapsedGameTime.TotalSeconds);
+            if (ballPos.Y < 0)
+            {
+                ballPos.Y = 0;
+                ballSpeed.Y *= -1;
+            }
+            else if (ballPos.Y >= _graphics.PreferredBackBufferHeight - ball.Height)
+            {
+                ballPos.Y = _graphics.PreferredBackBufferHeight - ball.Height;
+                ballSpeed.Y *= -1;
+            }
+
+            //Collision w/ player
+            if (ballPos.X < 20 & (ballPos.Y > playerRect.Y - ball.Height & ballPos.Y < playerRect.Y + playerRect.Height))
+            {
+                ballSpeed.X *= -1;
+                if (kState.IsKeyDown(Keys.Up) & !kState.IsKeyDown(Keys.Down))
+                    ballSpeed.Y += (float)rng.NextDouble() * 100;
+                else if (kState.IsKeyDown(Keys.Down) & !kState.IsKeyDown(Keys.Up))
+                    ballSpeed.Y -= (float)rng.NextDouble() * 100;
+            }
+
+            //Collision w/ cpu
+            if (ballPos.X > 780 - ball.Width & (ballPos.Y > computerRect.Y - ball.Height & ballPos.Y < computerRect.Y + computerRect.Height))
+            {
+                ballSpeed.X *= -1;
+                if (kState.IsKeyDown(Keys.Up) & !kState.IsKeyDown(Keys.Down))
+                    ballSpeed.Y += (float)rng.NextDouble() * 100;
+                else if (kState.IsKeyDown(Keys.Down) & !kState.IsKeyDown(Keys.Up))
+                    ballSpeed.Y -= (float)rng.NextDouble() * 100;
+            }
+
+            // Win detection
+            if (ballPos.X <= -ball.Width | ballPos.X >= 800 + ball.Width)
+            {
+                ballPos = new Vector2(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2);
+                ballSpeed = new Vector2(0, 0);
+            }
+            //Basic cpue AI
+            if (ballPos.Y > computerRect.Y)
+                computerRect.Y += (int)(computerSpeed * gameTime.ElapsedGameTime.TotalSeconds);
+            else if (ballPos.Y < computerRect.Y)
+                computerRect.Y -= (int)(computerSpeed * gameTime.ElapsedGameTime.TotalSeconds);
+
 
             base.Update(gameTime);
         }
